@@ -1,0 +1,7 @@
+{
+  "Main": 0,
+  "Remote": [
+    "localhost:5555",
+    "localhost:6666"
+  ]
+}

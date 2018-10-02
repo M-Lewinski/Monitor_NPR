@@ -2,6 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Monitor", "Monitor\Monitor.csproj", "{B8A71F13-D9FE-4797-9E94-4DC2B1C769EB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProducerConsumer", "ProducerConsumer\ProducerConsumer.csproj", "{0E3F49D8-AE4F-45CE-B3EB-BA7921A48D13}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +14,9 @@ Global
 		{B8A71F13-D9FE-4797-9E94-4DC2B1C769EB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B8A71F13-D9FE-4797-9E94-4DC2B1C769EB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B8A71F13-D9FE-4797-9E94-4DC2B1C769EB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0E3F49D8-AE4F-45CE-B3EB-BA7921A48D13}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0E3F49D8-AE4F-45CE-B3EB-BA7921A48D13}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0E3F49D8-AE4F-45CE-B3EB-BA7921A48D13}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0E3F49D8-AE4F-45CE-B3EB-BA7921A48D13}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
