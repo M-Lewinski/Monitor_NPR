@@ -6,4 +6,10 @@
   <ItemGroup>
     <ProjectReference Include="..\Monitor\Monitor.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <None Remove="config.json" />
+    <Resource Include="config.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Resource>
+  </ItemGroup>
 </Project>
