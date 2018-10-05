@@ -65,6 +65,10 @@ namespace Monitor
 				CurrentToken = new Token(rsg);
 			}
 
+			if (rsg.Monitors.ContainsKey(Id))
+			{
+				throw new Exception($"Monitor with id: {Id} already exists");
+			}
 			rsg.Monitors[Id] = this;
 		}
 

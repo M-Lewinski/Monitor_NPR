@@ -61,6 +61,10 @@ namespace Monitor
             ConditionalQueues = new List<BlockingCollection<string>>();
             RemoteNodesWaitingQueue = new List<string>();
             var rsg = RemoteServerGroup.Instance;
+            if (rsg.ConditionalVariables.ContainsKey(Id))
+            {
+                throw new Exception($"Conditional variable with id : {Id} already exists");
+            }
             rsg.ConditionalVariables[Id] = this;
             
             foreach (var monitor in assignedMonitors)
