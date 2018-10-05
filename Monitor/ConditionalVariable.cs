@@ -14,23 +14,11 @@ namespace Monitor
         
         public List<string> RemoteNodesWaitingQueue { get; set; }
 
-        private ConditionalVariable(string id, params MonitorBase[] assignedMonitors)
-        {
-            Id = id;
-            AssignedMonitors = new List<MonitorBase>();
-            ConditionalQueues = new List<BlockingCollection<string>>();
-            RemoteNodesWaitingQueue = new List<string>();
-            var rsg = RemoteServerGroup.Instance;
-            rsg.ConditionalVariables[Id] = this;
-            
-            foreach (var monitor in assignedMonitors)
-            {
-                AssignedMonitors.Add(monitor);
-            }
-        }
+        public Mutex ConditionMutex { get; set; }
 
         public void Wait()
         {
+            ConditionMutex.WaitOne();
             var waitForSignal = new BlockingCollection<string>();
             ConditionalQueues.Add(waitForSignal);
             var remoteServerGroup = RemoteServerGroup.Instance;
@@ -55,6 +43,8 @@ namespace Monitor
             {
                 AssignedMonitors[i].ReleaseLock();
             }
+            ConditionMutex.ReleaseMutex();
+            Console.WriteLine("Waiting to be notified");
             var notifiedBy = waitForSignal.Take();
             Console.WriteLine($"Notified by {notifiedBy}");
             for (var i = 0; i < AssignedMonitors.Count; i++)
@@ -63,8 +53,25 @@ namespace Monitor
             }
         }
 
+        public ConditionalVariable(string id, params MonitorBase[] assignedMonitors)
+        {
+            ConditionMutex = new Mutex();
+            Id = id;
+            AssignedMonitors = new List<MonitorBase>();
+            ConditionalQueues = new List<BlockingCollection<string>>();
+            RemoteNodesWaitingQueue = new List<string>();
+            var rsg = RemoteServerGroup.Instance;
+            rsg.ConditionalVariables[Id] = this;
+            
+            foreach (var monitor in assignedMonitors)
+            {
+                AssignedMonitors.Add(monitor);
+            }
+        }
+
         public void NotifyAll()
-        {    
+        {
+            ConditionMutex.WaitOne();
             var msg = new Message
             {
                 MsgType = MessageType.NotifyAllResponse,
@@ -90,20 +97,8 @@ namespace Monitor
                 }
                 RemoteNodesWaitingQueue.RemoveAt(0);
             }
+            ConditionMutex.ReleaseMutex();
         }
 
-        public void AllMonitorRelease()
-        {
-            foreach (var monitor in AssignedMonitors)
-                monitor.LocalMutex.ReleaseMutex();
-        }
-
-        public void AllMonitorWait()
-        {
-            foreach (var monitor in AssignedMonitors)
-            {
-                monitor.LocalMutex.WaitOne();
-            }
-        }
     }
 }

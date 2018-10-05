@@ -100,6 +100,7 @@ namespace Monitor.Communication
             Console.WriteLine("Received Token Response");
             var token = JsonConvert.DeserializeObject<Token>(requestMsg.Data);
             var monitor = RemoteServGr.Monitors[requestMsg.MonitorId];
+            Console.WriteLine("Waiting on Token Response");
             monitor.TokenMutex.WaitOne();
             string monitorId = monitor.Id;
             JsonSerializerSettings populateSettings = new JsonSerializerSettings {ObjectCreationHandling = ObjectCreationHandling.Replace, TypeNameHandling = TypeNameHandling.All };
@@ -127,23 +128,26 @@ namespace Monitor.Communication
 
         private void ReceiveWaitRequest(Message requestMsg)
         {
+            Console.WriteLine("Received Wait request");
             var conditionalVariable = RemoteServGr.ConditionalVariables[requestMsg.Data];
-            conditionalVariable.AllMonitorWait();
             
+            conditionalVariable.ConditionMutex.WaitOne();
             if (!conditionalVariable.RemoteNodesWaitingQueue.Contains(requestMsg.SendingServer))
             {
                 conditionalVariable.RemoteNodesWaitingQueue.Add(requestMsg.SendingServer);
             }
-            conditionalVariable.AllMonitorRelease();
+            conditionalVariable.ConditionMutex.ReleaseMutex();
         }
 
         private void ReceiveNotifyAllResponse(Message responseMsg)
         {
+            Console.WriteLine("Received NotifyAll response");
             var conditionalVariable = RemoteServGr.ConditionalVariables[responseMsg.Data];
-            conditionalVariable.AllMonitorWait();
+            conditionalVariable.ConditionMutex.WaitOne();
 
             if (!conditionalVariable.RemoteNodesWaitingQueue.Contains(RemoteServGr.NodeAddress))
             {
+                conditionalVariable.ConditionMutex.ReleaseMutex();
                 return;
             }
 
@@ -153,7 +157,7 @@ namespace Monitor.Communication
                 queue.Add(responseMsg.SendingServer);
             }
             conditionalVariable.ConditionalQueues.Clear();
-            conditionalVariable.AllMonitorRelease();
+            conditionalVariable.ConditionMutex.ReleaseMutex();
         }
 
     }

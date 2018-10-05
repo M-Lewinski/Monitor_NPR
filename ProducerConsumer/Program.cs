@@ -3,10 +3,13 @@ using System.Collections.Generic;
 using System.Threading;
 using Monitor;
 using Newtonsoft.Json;
+using ProducerConsumer;
 
 namespace ProducerConsumer
 {
-    
+
+                    
+
     public class BufforMonitor : MonitorBase
     {
         public List<int> Buffor { get; set; }
@@ -44,16 +47,22 @@ namespace ProducerConsumer
 
         public void Consume()
         {
-            SharedBufforMonitor.AcquireLock();
-            while (SharedBufforMonitor.Buffor.Count == 0)
+            while (true)
             {
-                Empty.Wait();                
+                SharedBufforMonitor.AcquireLock();
+                while (SharedBufforMonitor.Buffor.Count == 0)
+                {
+                    Empty.Wait();
+                }
+                var value = SharedBufforMonitor.Buffor[0];
+                Console.WriteLine($"$$$$ Consumed: {value} $$$$");
+                SharedBufforMonitor.Buffor.RemoveAt(0);
+                Full.NotifyAll();
+                SharedBufforMonitor.ReleaseLock();
+                
+                Console.WriteLine(".... Consumer working ....");
+                Thread.Sleep(3000*new Random().Next(5));
             }
-
-            var value = SharedBufforMonitor.Buffor[0];
-            Console.WriteLine($"Consumed: {value}");
-            Full.NotifyAll();
-            SharedBufforMonitor.ReleaseLock();
         }
     }
     
@@ -73,48 +82,52 @@ namespace ProducerConsumer
 
         public void Produce()
         {
-            SharedBufforMonitor.AcquireLock();
-            while (SharedBufforMonitor.Buffor.Count == SharedBufforMonitor.BufforMaxSize)
+            while (true)
             {
-                Full.Wait();                
-            }
 
-            var value = SharedBufforMonitor.LastCreatedValue++;
-            Console.WriteLine($"Produced: {value}");
-            SharedBufforMonitor.Buffor.Add(value);
-            Empty.NotifyAll();
-            SharedBufforMonitor.ReleaseLock();
+                SharedBufforMonitor.AcquireLock();
+                while (SharedBufforMonitor.Buffor.Count == SharedBufforMonitor.BufforMaxSize)
+                {
+                    Full.Wait();
+                }
+                var value = SharedBufforMonitor.LastCreatedValue++;
+                Console.WriteLine($"$$$$ Produced: {value} $$$$");
+                SharedBufforMonitor.Buffor.Add(value);
+                Empty.NotifyAll();
+                SharedBufforMonitor.ReleaseLock();
+                Console.WriteLine(".... Producer working ....");
+                Thread.Sleep(3000*new Random().Next(5));
+            }
         }
     }
 
 
     class Program
     {
-        
+
         static void Main(string[] args)
         {
-            RemoteServerGroup.Initiate(args);
+            RemoteServerGroup.Initiate(args); // Inicjalizacja singletona Remote Server Group
             
-            BufforMonitor newBufforMonitor = new BufforMonitor(3,RemoteServerGroup.Instance.NodeAddressNumber);
-            RemoteServerGroup.StartRemoteExecution();
-            Console.WriteLine($"Before: {newBufforMonitor.Id} 0 {newBufforMonitor.LocalValue}");
-            newBufforMonitor.AcquireLock();
-            if (RemoteServerGroup.Instance.NodeAddressNumber > 0)
+            // Tutaj powinny zostać stworzone wszystkie Monitory i zmienne warunkowe
+            
+            BufforMonitor sharedBufforMonitor = new BufforMonitor(3,RemoteServerGroup.Instance.NodeAddressNumber);
+            
+            ConditionalVariable empty = new ConditionalVariable("Empty",sharedBufforMonitor);
+            ConditionalVariable full = new ConditionalVariable("full",sharedBufforMonitor);
+            
+            RemoteServerGroup.StartRemoteExecution(); // Barriera zapewniająca, że wszystkie servery wykonają poprawnie całą inicjalizację obiektów
+
+            if (RemoteServerGroup.Instance.NodeAddressNumber < 2)
             {
-                while (newBufforMonitor.Buffor.Count == 0)
-                {
-                    newBufforMonitor.ReleaseLock();
-                    Thread.Sleep(1000);
-                    newBufforMonitor.AcquireLock();
-                }
-                Console.WriteLine($"result {newBufforMonitor.Buffor[0]}");
+                Consumer consumer = new Consumer(empty,full,sharedBufforMonitor);
+                consumer.Consume();
             }
             else
             {
-                newBufforMonitor.Buffor.Add(new Random().Next());
+                Producer producer = new Producer(empty,full,sharedBufforMonitor);
+                producer.Produce();
             }
-            newBufforMonitor.ReleaseLock();
-            Console.WriteLine($"After: {newBufforMonitor.Id} {newBufforMonitor.LocalValue}");
             RemoteServerGroup.Finish();
         }
         
